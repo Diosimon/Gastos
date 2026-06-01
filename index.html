@@ -138,7 +138,12 @@
         <option value="Otro">📄 Otro</option>
       </select>
     </div>
-    <div class="note">🔁 Se repite automáticamente cada mes.</div>
+    <div style="display:flex; align-items:center; gap:10px; padding:11px 13px; background:var(--surface2); border-radius:var(--r); margin-top:4px;">
+      <input type="checkbox" id="f-unico" style="width:18px; height:18px; accent-color:var(--accent); cursor:pointer; flex-shrink:0;" />
+      <label for="f-unico" style="font-size:13px; color:var(--text2); cursor:pointer; line-height:1.4;">
+        <strong style="color:var(--text);">Pago único</strong> — se elimina al marcarlo como pagado
+      </label>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-save" onclick="saveDebt()">Guardar</button>
@@ -201,7 +206,23 @@ function isPaid(id, y, m) { return !!payments[payKey(id, y, m)]; }
 
 function togglePaid(id, y, m) {
   const k = payKey(id, y, m);
-  if (payments[k]) delete payments[k]; else payments[k] = true;
+  if (payments[k]) {
+    delete payments[k];
+  } else {
+    payments[k] = true;
+    const debt = debts.find(d => d.id === id);
+    if (debt && debt.unico) {
+      setTimeout(() => {
+        if (confirm('"' + debt.name + '" es pago único. ¿Eliminarlo de la lista?')) {
+          debts = debts.filter(d => d.id !== id);
+          Object.keys(payments).forEach(pk => { if (pk.startsWith(id + '_')) delete payments[pk]; });
+          save(); render(); return;
+        }
+        save(); render();
+      }, 300);
+      return;
+    }
+  }
   save(); render();
 }
 
@@ -221,7 +242,7 @@ function fmt(n) { return '$' + n.toLocaleString('es-MX', {minimumFractionDigits:
 function render() {
   const thisDebts = debts.filter(d => matches(d)).sort((a,b) => a.day - b.day);
   const showNext = currentFilter === 'todas' || currentFilter === 'pendiente';
-  const nextDebts = showNext ? debts.filter(d => !isPaid(d.id, nextYear, nextMonth)).sort((a,b) => a.day - b.day) : [];
+  const nextDebts = showNext ? debts.filter(d => !d.unico && !isPaid(d.id, nextYear, nextMonth)).sort((a,b) => a.day - b.day) : [];
 
   let html = '';
   if (thisDebts.length) {
@@ -264,6 +285,7 @@ function cardHTML(debt, y, m, isNext) {
       <div class="debt-meta">
         <span>📅 Día ${debt.day}</span>
         <span class="badge badge-gray">${debt.type}</span>
+        ${debt.unico ? '<span class="badge" style="background:#f0e6ff;color:#7c3aed;">Único</span>' : ''}
         ${badge}
       </div>
     </div>
@@ -284,9 +306,11 @@ function openModal(id) {
     document.getElementById('f-amount').value = d.amount;
     document.getElementById('f-day').value = d.day;
     document.getElementById('f-type').value = d.type;
+    document.getElementById('f-unico').checked = !!d.unico;
   } else {
     ['f-name','f-amount','f-day'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-type').value = 'TDC';
+    document.getElementById('f-unico').checked = false;
   }
   document.getElementById('overlay').classList.add('open');
 }
@@ -299,12 +323,13 @@ function saveDebt() {
   const amount = parseFloat(document.getElementById('f-amount').value);
   const day = parseInt(document.getElementById('f-day').value);
   const type = document.getElementById('f-type').value;
+  const unico = document.getElementById('f-unico').checked;
   if (!name || !amount || !day || day < 1 || day > 31) { alert('Por favor completa todos los campos.'); return; }
   if (editingId) {
     const i = debts.findIndex(x => x.id === editingId);
-    debts[i] = { ...debts[i], name, amount, day, type };
+    debts[i] = { ...debts[i], name, amount, day, type, unico };
   } else {
-    debts.push({ id: uid(), name, amount, day, type });
+    debts.push({ id: uid(), name, amount, day, type, unico });
   }
   save(); closeModal(); render();
 }
