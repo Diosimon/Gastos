@@ -60,6 +60,14 @@
   .btn-submit:not(:disabled):active { opacity: 0.85; }
 
   .hint { font-size: 12px; color: var(--text3); text-align: center; margin-top: 16px; line-height: 1.5; }
+  .link-btn {
+    background: none; border: none; color: var(--accent); font-size: 13px;
+    cursor: pointer; text-decoration: underline; padding: 0;
+  }
+  .link-btn:hover { opacity: 0.8; }
+
+  .view { display: none; }
+  .view.active { display: block; }
 </style>
 </head>
 <body>
@@ -68,34 +76,84 @@
   <div class="logo">
     <div class="logo-icon">💳</div>
     <h1>Mis Pagos</h1>
-    <p>Ingresa para acceder a tu app</p>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" id="tab-login" onclick="switchTab('login')">Entrar</button>
-    <button class="tab" id="tab-signup" onclick="switchTab('signup')">Crear cuenta</button>
+    <p id="logo-subtitle">Ingresa para acceder a tu app</p>
   </div>
 
   <div id="error-msg" class="error"></div>
   <div id="info-msg" class="info"></div>
 
-  <form id="auth-form" onsubmit="handleSubmit(event)">
-    <div class="field">
-      <label for="email">Email</label>
-      <input type="email" id="email" placeholder="tu@email.com" autocomplete="email" required />
+  <!-- Vista: login / registro -->
+  <div id="view-auth" class="view active">
+    <div class="tabs">
+      <button class="tab active" id="tab-login" onclick="switchTab('login')">Entrar</button>
+      <button class="tab" id="tab-signup" onclick="switchTab('signup')">Crear cuenta</button>
     </div>
-    <div class="field">
-      <label for="password">Contraseña</label>
-      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
-    </div>
-    <button type="submit" class="btn-submit" id="submit-btn">Entrar</button>
-  </form>
 
-  <p class="hint" id="hint-text">¿Olvidaste tu contraseña? Contacta al administrador.</p>
+    <form id="auth-form" onsubmit="handleSubmit(event)">
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="tu@email.com" autocomplete="email" required />
+      </div>
+      <div class="field">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn-submit" id="submit-btn">Entrar</button>
+    </form>
+
+    <p class="hint" id="hint-login">
+      <button class="link-btn" onclick="showView('forgot')">¿Olvidaste tu contraseña?</button>
+    </p>
+  </div>
+
+  <!-- Vista: recuperar contraseña -->
+  <div id="view-forgot" class="view">
+    <form id="forgot-form" onsubmit="handleForgot(event)">
+      <div class="field">
+        <label for="forgot-email">Email de tu cuenta</label>
+        <input type="email" id="forgot-email" placeholder="tu@email.com" autocomplete="email" required />
+      </div>
+      <button type="submit" class="btn-submit" id="forgot-btn">Enviar enlace</button>
+    </form>
+    <p class="hint">
+      <button class="link-btn" onclick="showView('auth')">Volver al inicio de sesión</button>
+    </p>
+  </div>
+
+  <!-- Vista: nueva contraseña (después de recovery email) -->
+  <div id="view-reset" class="view">
+    <form id="reset-form" onsubmit="handleReset(event)">
+      <div class="field">
+        <label for="new-password">Nueva contraseña</label>
+        <input type="password" id="new-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required minlength="6" />
+      </div>
+      <div class="field">
+        <label for="confirm-password">Confirmar contraseña</label>
+        <input type="password" id="confirm-password" placeholder="Repite la contraseña" autocomplete="new-password" required minlength="6" />
+      </div>
+      <button type="submit" class="btn-submit" id="reset-btn">Guardar nueva contraseña</button>
+    </form>
+  </div>
 </div>
 
 <script>
 let currentTab = 'login';
+let recoveryAccessToken = null;
+
+// ── Vistas ──────────────────────────────────────────────────────────────────
+
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  hideMessages();
+
+  const subtitles = {
+    auth: 'Ingresa para acceder a tu app',
+    forgot: 'Recuperar contraseña',
+    reset: 'Elige una nueva contraseña',
+  };
+  document.getElementById('logo-subtitle').textContent = subtitles[name] || '';
+}
 
 function switchTab(tab) {
   currentTab = tab;
@@ -103,9 +161,11 @@ function switchTab(tab) {
   document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
   document.getElementById('submit-btn').textContent = tab === 'login' ? 'Entrar' : 'Crear cuenta';
   document.getElementById('password').autocomplete = tab === 'login' ? 'current-password' : 'new-password';
-  document.getElementById('hint-text').style.display = tab === 'signup' ? 'none' : '';
+  document.getElementById('hint-login').style.display = tab === 'signup' ? 'none' : '';
   hideMessages();
 }
+
+// ── Mensajes ─────────────────────────────────────────────────────────────────
 
 function showError(msg) {
   const el = document.getElementById('error-msg');
@@ -123,6 +183,15 @@ function hideMessages() {
   document.getElementById('error-msg').style.display = 'none';
   document.getElementById('info-msg').style.display = 'none';
 }
+
+// ── Cookie ────────────────────────────────────────────────────────────────────
+
+function setAuthCookie(token, expiresIn) {
+  const expires = new Date(Date.now() + (expiresIn || 3600) * 1000).toUTCString();
+  document.cookie = 'nf_jwt=' + token + '; path=/; expires=' + expires + '; SameSite=Lax';
+}
+
+// ── Login / Registro ──────────────────────────────────────────────────────────
 
 async function handleSubmit(e) {
   e.preventDefault();
@@ -142,6 +211,7 @@ async function handleSubmit(e) {
     }
   } catch (err) {
     showError(err.message || 'Ocurrió un error. Intenta de nuevo.');
+  } finally {
     btn.disabled = false;
     btn.textContent = currentTab === 'login' ? 'Entrar' : 'Crear cuenta';
   }
@@ -156,7 +226,12 @@ async function doLogin(email, password) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    if (res.status === 400 || res.status === 401) throw new Error('Email o contraseña incorrectos.');
+    if (res.status === 400 || res.status === 401) {
+      throw new Error('Email o contraseña incorrectos. Si olvidaste tu contraseña, usa el enlace de abajo.');
+    }
+    if (res.status === 422) {
+      throw new Error('Email no confirmado. Revisa tu correo y haz clic en el enlace de confirmación.');
+    }
     throw new Error(err.error_description || err.msg || 'Error al iniciar sesión.');
   }
 
@@ -175,29 +250,143 @@ async function doSignup(email, password) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     if (res.status === 422) throw new Error('La contraseña debe tener al menos 6 caracteres.');
-    if (res.status === 400) throw new Error('Ese email ya está registrado.');
+    if (res.status === 400 && (err.msg || '').includes('already')) throw new Error('Ese email ya está registrado. Usa "Entrar".');
+    if (res.status === 403 || (err.msg || '').toLowerCase().includes('invite')) {
+      throw new Error('El registro está cerrado. Contacta al administrador para recibir una invitación.');
+    }
     throw new Error(err.msg || 'Error al crear la cuenta.');
   }
 
   const data = await res.json();
-  if (data.confirmed_at || data.email_confirmed_at) {
-    // Autoconfirm habilitado — hacer login automático
-    await doLogin(email, password);
+  if (data.access_token) {
+    setAuthCookie(data.access_token, data.expires_in || 3600);
+    window.location.href = '/';
   } else {
-    showInfo('Cuenta creada. Revisa tu email para confirmar tu cuenta antes de entrar.');
+    showInfo('Cuenta creada. Revisa tu email para confirmar tu cuenta y luego vuelve aquí a iniciar sesión.');
     document.getElementById('submit-btn').disabled = false;
     document.getElementById('submit-btn').textContent = 'Crear cuenta';
   }
 }
 
-function setAuthCookie(token, expiresIn) {
-  const expires = new Date(Date.now() + expiresIn * 1000).toUTCString();
-  document.cookie = `nf_jwt=${token}; path=/; expires=${expires}; SameSite=Lax`;
+// ── Recuperar contraseña ───────────────────────────────────────────────────────
+
+async function handleForgot(e) {
+  e.preventDefault();
+  const email = document.getElementById('forgot-email').value.trim();
+  const btn = document.getElementById('forgot-btn');
+
+  hideMessages();
+  btn.disabled = true;
+  btn.textContent = 'Enviando…';
+
+  try {
+    const res = await fetch('/.netlify/identity/recover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    // La API devuelve 200 incluso si el email no existe (seguridad)
+    showInfo('Si ese email está registrado, recibirás un enlace para restablecer tu contraseña. Revisa también el spam.');
+    document.getElementById('forgot-form').reset();
+  } catch (err) {
+    showError('Error al enviar el email. Intenta de nuevo.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar enlace';
+  }
 }
 
-// Si ya hay sesión activa, redirigir a inicio
-const existing = document.cookie.split(';').find(c => c.trim().startsWith('nf_jwt='));
-if (existing) window.location.href = '/';
+// ── Nueva contraseña (flujo recovery) ────────────────────────────────────────
+
+async function handleReset(e) {
+  e.preventDefault();
+  const newPwd = document.getElementById('new-password').value;
+  const confirmPwd = document.getElementById('confirm-password').value;
+  const btn = document.getElementById('reset-btn');
+
+  if (newPwd !== confirmPwd) {
+    showError('Las contraseñas no coinciden.');
+    return;
+  }
+  if (newPwd.length < 6) {
+    showError('La contraseña debe tener al menos 6 caracteres.');
+    return;
+  }
+
+  hideMessages();
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  try {
+    const res = await fetch('/.netlify/identity/user', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + recoveryAccessToken
+      },
+      body: JSON.stringify({ password: newPwd })
+    });
+
+    if (!res.ok) {
+      throw new Error('No se pudo actualizar la contraseña. El enlace puede haber expirado.');
+    }
+
+    const data = await res.json();
+    // Usar el token de recovery para loguear (ya es válido)
+    setAuthCookie(recoveryAccessToken, 3600);
+    window.location.href = '/';
+  } catch (err) {
+    showError(err.message || 'Error al guardar la contraseña.');
+    btn.disabled = false;
+    btn.textContent = 'Guardar nueva contraseña';
+  }
+}
+
+// ── Manejo de tokens desde emails de Netlify Identity ────────────────────────
+// Cuando el usuario hace clic en un enlace de confirmación o recuperación,
+// Netlify Identity redirige al sitio con #access_token=... en el hash.
+// La edge function intercepta el request y redirige a /login.html,
+// y los navegadores preservan el hash en esa redirección.
+
+(function handleHashTokens() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) return;
+
+  const params = new URLSearchParams(hash);
+  const accessToken = params.get('access_token');
+  const tokenType = params.get('type');
+  const expiresIn = parseInt(params.get('expires_in') || '3600', 10);
+  const errorCode = params.get('error');
+  const errorDesc = params.get('error_description');
+
+  // Limpiar el hash de la URL por seguridad
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+
+  if (errorCode) {
+    showError(errorDesc || 'Enlace inválido o expirado. Solicita uno nuevo.');
+    return;
+  }
+
+  if (!accessToken) return;
+
+  if (tokenType === 'recovery') {
+    // El usuario hizo clic en el enlace de recuperación de contraseña
+    recoveryAccessToken = accessToken;
+    showView('reset');
+    showInfo('Ingresa tu nueva contraseña.');
+  } else {
+    // Confirmación de email (type=signup) o magic link — iniciar sesión directamente
+    setAuthCookie(accessToken, expiresIn);
+    window.location.href = '/';
+  }
+})();
+
+// Si ya hay sesión activa, redirigir al inicio
+const existingCookie = document.cookie.split(';').find(c => c.trim().startsWith('nf_jwt='));
+if (existingCookie && !window.location.hash) {
+  window.location.href = '/';
+}
 </script>
 </body>
 </html>
