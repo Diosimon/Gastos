@@ -25,6 +25,7 @@
   .app-date { font-size: 13px; color: var(--text2); margin-top: 2px; }
   .sync-row { font-size: 12px; color: var(--text2); margin-top: 3px; }
   .btn-add { background: var(--accent); color: #fff; border: none; border-radius: var(--r); padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-logout { background: var(--surface2); color: var(--text2); border: 1px solid var(--border-strong); border-radius: var(--r); width: 36px; height: 36px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
   .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .metric { background: var(--surface2); border-radius: var(--r); padding: 10px 12px; }
@@ -101,7 +102,10 @@
       <div class="app-date" id="date-label"></div>
       <div class="sync-row" id="sync-status"></div>
     </div>
-    <button class="btn-add" onclick="openModal()">+ Agregar</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-add" onclick="openModal()">+ Agregar</button>
+      <button class="btn-logout" onclick="logout()" title="Cerrar sesión">⎋</button>
+    </div>
   </div>
   <div class="summary">
     <div class="metric"><div class="metric-label">Por pagar</div><div class="metric-value danger" id="total-pending">$0</div></div>
@@ -353,6 +357,11 @@ function deleteDebt(id) {
 }
 
 load();
+
+function logout() {
+  document.cookie = 'nf_jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+  window.location.href = '/login.html';
+}
 </script>
 </body>
 </html>

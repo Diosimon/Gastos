@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mis Pagos">
+<title>Mis Pagos — Acceso</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #f5f4f0; --surface: #fff; --surface2: #f0ede8;
+    --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.16);
+    --text: #1a1a18; --text2: #6b6b67; --text3: #9e9e9a;
+    --accent: #2d6a4f; --accent-light: #e8f5ef;
+    --danger: #c0392b; --danger-light: #fdf0ee;
+    --r: 12px; --rl: 16px;
+  }
+  body {
+    font-family: -apple-system, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); font-size: 15px;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl);
+    padding: 32px 24px; width: 100%; max-width: 360px;
+  }
+  .logo { text-align: center; margin-bottom: 24px; }
+  .logo-icon { font-size: 40px; margin-bottom: 10px; }
+  .logo h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.4px; }
+  .logo p { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+  .tabs { display: flex; gap: 0; margin-bottom: 24px; background: var(--surface2); border-radius: var(--r); padding: 4px; }
+  .tab { flex: 1; padding: 8px; text-align: center; font-size: 14px; font-weight: 600; border: none; background: transparent; color: var(--text2); border-radius: 9px; cursor: pointer; transition: all 0.15s; }
+  .tab.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.10); }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--text2); font-weight: 600; margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: 11px 13px; border: 1px solid var(--border-strong);
+    border-radius: var(--r); font-size: 16px; background: var(--bg); color: var(--text); outline: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+
+  .error {
+    font-size: 13px; color: var(--danger); background: var(--danger-light);
+    border-radius: var(--r); padding: 10px 13px; margin-bottom: 14px; display: none;
+  }
+  .info {
+    font-size: 13px; color: var(--accent); background: var(--accent-light);
+    border-radius: var(--r); padding: 10px 13px; margin-bottom: 14px; display: none;
+  }
+  .btn-submit {
+    width: 100%; padding: 13px; border: none; border-radius: var(--r);
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: opacity 0.15s;
+  }
+  .btn-submit:disabled { opacity: 0.6; cursor: default; }
+  .btn-submit:not(:disabled):active { opacity: 0.85; }
+
+  .hint { font-size: 12px; color: var(--text3); text-align: center; margin-top: 16px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">💳</div>
+    <h1>Mis Pagos</h1>
+    <p>Ingresa para acceder a tu app</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-login" onclick="switchTab('login')">Entrar</button>
+    <button class="tab" id="tab-signup" onclick="switchTab('signup')">Crear cuenta</button>
+  </div>
+
+  <div id="error-msg" class="error"></div>
+  <div id="info-msg" class="info"></div>
+
+  <form id="auth-form" onsubmit="handleSubmit(event)">
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="tu@email.com" autocomplete="email" required />
+    </div>
+    <div class="field">
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+    </div>
+    <button type="submit" class="btn-submit" id="submit-btn">Entrar</button>
+  </form>
+
+  <p class="hint" id="hint-text">¿Olvidaste tu contraseña? Contacta al administrador.</p>
+</div>
+
+<script>
+let currentTab = 'login';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+  document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('submit-btn').textContent = tab === 'login' ? 'Entrar' : 'Crear cuenta';
+  document.getElementById('password').autocomplete = tab === 'login' ? 'current-password' : 'new-password';
+  document.getElementById('hint-text').style.display = tab === 'signup' ? 'none' : '';
+  hideMessages();
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('info-msg').style.display = 'none';
+}
+
+function showInfo(msg) {
+  const el = document.getElementById('info-msg');
+  el.textContent = msg; el.style.display = 'block';
+  document.getElementById('error-msg').style.display = 'none';
+}
+
+function hideMessages() {
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('info-msg').style.display = 'none';
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('submit-btn');
+
+  hideMessages();
+  btn.disabled = true;
+  btn.textContent = currentTab === 'login' ? 'Entrando…' : 'Creando cuenta…';
+
+  try {
+    if (currentTab === 'login') {
+      await doLogin(email, password);
+    } else {
+      await doSignup(email, password);
+    }
+  } catch (err) {
+    showError(err.message || 'Ocurrió un error. Intenta de nuevo.');
+    btn.disabled = false;
+    btn.textContent = currentTab === 'login' ? 'Entrar' : 'Crear cuenta';
+  }
+}
+
+async function doLogin(email, password) {
+  const res = await fetch('/.netlify/identity/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'password', username: email, password })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 400 || res.status === 401) throw new Error('Email o contraseña incorrectos.');
+    throw new Error(err.error_description || err.msg || 'Error al iniciar sesión.');
+  }
+
+  const data = await res.json();
+  setAuthCookie(data.access_token, data.expires_in || 3600);
+  window.location.href = '/';
+}
+
+async function doSignup(email, password) {
+  const res = await fetch('/.netlify/identity/signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 422) throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    if (res.status === 400) throw new Error('Ese email ya está registrado.');
+    throw new Error(err.msg || 'Error al crear la cuenta.');
+  }
+
+  const data = await res.json();
+  if (data.confirmed_at || data.email_confirmed_at) {
+    // Autoconfirm habilitado — hacer login automático
+    await doLogin(email, password);
+  } else {
+    showInfo('Cuenta creada. Revisa tu email para confirmar tu cuenta antes de entrar.');
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('submit-btn').textContent = 'Crear cuenta';
+  }
+}
+
+function setAuthCookie(token, expiresIn) {
+  const expires = new Date(Date.now() + expiresIn * 1000).toUTCString();
+  document.cookie = `nf_jwt=${token}; path=/; expires=${expires}; SameSite=Lax`;
+}
+
+// Si ya hay sesión activa, redirigir a inicio
+const existing = document.cookie.split(';').find(c => c.trim().startsWith('nf_jwt='));
+if (existing) window.location.href = '/';
+</script>
+</body>
+</html>
