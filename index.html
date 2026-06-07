@@ -138,18 +138,22 @@
         <option value="Otro">📄 Otro</option>
       </select>
     </div>
+    <div class="field"><label>Nota (opcional)</label>
+      <input type="text" id="f-nota" placeholder="ej. Samsung 65&quot;, MSI laptop..." />
+    </div>
     <div style="display:flex; align-items:center; gap:10px; padding:11px 13px; background:var(--surface2); border-radius:var(--r); margin-top:4px;">
       <input type="checkbox" id="f-unico" style="width:18px; height:18px; accent-color:var(--accent); cursor:pointer; flex-shrink:0;" />
       <label for="f-unico" style="font-size:13px; color:var(--text2); cursor:pointer; line-height:1.4;">
         <strong style="color:var(--text);">Pago único</strong> — se elimina al marcarlo como pagado
       </label>
     </div>
-    <div style="display:flex; align-items:center; gap:10px; padding:11px 13px; background:var(--surface2); border-radius:var(--r); margin-top:6px;">
-      <input type="checkbox" id="f-siguiente" style="width:18px; height:18px; accent-color:var(--accent); cursor:pointer; flex-shrink:0;" />
+    <div style="display:flex; align-items:center; gap:10px; padding:11px 13px; background:#fff8e6; border-radius:var(--r); margin-top:8px; border:1px solid #f0d080;">
+      <input type="checkbox" id="f-siguiente" style="width:18px; height:18px; accent-color:#b7791f; cursor:pointer; flex-shrink:0;" />
       <label for="f-siguiente" style="font-size:13px; color:var(--text2); cursor:pointer; line-height:1.4;">
-        <strong style="color:var(--text);">Cobro en mes siguiente</strong> — ya pasó mi corte, este gasto va al próximo mes
+        <strong style="color:var(--text);">Cobro en mes siguiente</strong> — ya pasó el corte, el pago cae el próximo mes
       </label>
     </div>
+    
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-save" onclick="saveDebt()">Guardar</button>
@@ -233,6 +237,7 @@ function togglePaid(id, y, m) {
 }
 
 function getStatus(debt) {
+  if (debt.siguiente) return 'pendiente';
   if (isPaid(debt.id, thisYear, thisMonth)) return 'pagada';
   const target = new Date(thisYear, thisMonth, debt.day);
   const diff = Math.ceil((target - today) / 86400000);
@@ -265,7 +270,7 @@ function render() {
   document.getElementById('content').innerHTML = html || '<div class="empty">Agrega tu primera deuda con el botón +</div>';
 
   let pending = 0, paid = 0;
-  debts.forEach(d => { if (isPaid(d.id, thisYear, thisMonth)) paid += d.amount; else pending += d.amount; });
+  debts.forEach(d => { if (d.siguiente) return; if (isPaid(d.id, thisYear, thisMonth)) paid += d.amount; else pending += d.amount; });
   document.getElementById('total-pending').textContent = fmt(pending);
   document.getElementById('total-paid').textContent = fmt(paid);
   document.getElementById('total-count').textContent = debts.length;
@@ -288,10 +293,12 @@ function cardHTML(debt, y, m, isNext) {
     <div class="type-icon">${typeIcons[debt.type]||'📄'}</div>
     <div class="debt-info">
       <div class="debt-name">${debt.name}</div>
+      ${debt.nota ? `<div style="font-size:12px; color:var(--text3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📝 ${debt.nota}</div>` : ""}
       <div class="debt-meta">
         <span>📅 Día ${debt.day}</span>
         <span class="badge badge-gray">${debt.type}</span>
         ${debt.unico ? '<span class="badge" style="background:#f0e6ff;color:#7c3aed;">Único</span>' : ''}
+        ${debt.siguiente ? '<span class="badge" style="background:#fff3cd;color:#b7791f;">Próximo mes</span>' : ''}
         ${debt.siguiente ? '<span class="badge" style="background:#e0f0ff;color:#1d6fa4;">Próximo mes</span>' : ''}
         ${badge}
       </div>
@@ -313,12 +320,16 @@ function openModal(id) {
     document.getElementById('f-amount').value = d.amount;
     document.getElementById('f-day').value = d.day;
     document.getElementById('f-type').value = d.type;
+    document.getElementById('f-nota').value = d.nota || '';
     document.getElementById('f-unico').checked = !!d.unico;
+    document.getElementById('f-siguiente').checked = !!d.siguiente;
     document.getElementById('f-siguiente').checked = !!d.siguiente;
   } else {
     ['f-name','f-amount','f-day'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-type').value = 'TDC';
+    document.getElementById('f-nota').value = '';
     document.getElementById('f-unico').checked = false;
+    document.getElementById('f-siguiente').checked = false;
     document.getElementById('f-siguiente').checked = false;
   }
   document.getElementById('overlay').classList.add('open');
@@ -332,14 +343,16 @@ function saveDebt() {
   const amount = parseFloat(document.getElementById('f-amount').value);
   const day = parseInt(document.getElementById('f-day').value);
   const type = document.getElementById('f-type').value;
+  const nota = document.getElementById('f-nota').value.trim();
   const unico = document.getElementById('f-unico').checked;
   const siguiente = document.getElementById('f-siguiente').checked;
+  siguiente = document.getElementById('f-siguiente').checked;
   if (!name || !amount || !day || day < 1 || day > 31) { alert('Por favor completa todos los campos.'); return; }
   if (editingId) {
     const i = debts.findIndex(x => x.id === editingId);
-    debts[i] = { ...debts[i], name, amount, day, type, unico, siguiente };
+    debts[i] = { ...debts[i], name, amount, day, type, nota, unico, siguiente };
   } else {
-    debts.push({ id: uid(), name, amount, day, type, unico, siguiente });
+    debts.push({ id: uid(), name, amount, day, type, nota, unico, siguiente });
   }
   save(); closeModal(); render();
 }
@@ -353,6 +366,21 @@ function deleteDebt(id) {
 }
 
 load();
+
+// Auto-refresh cada 30 segundos para detectar cambios de la PC
+setInterval(async () => {
+  try {
+    const res = await fetch(SHEETS_URL + '?t=' + Date.now());
+    const text = await res.text();
+    const data = text && text !== '{}' ? JSON.parse(text) : null;
+    if (data && data.debts) {
+      debts = data.debts;
+      payments = data.payments || {};
+      render();
+      showStatus('✓ Actualizado', '#2d6a4f');
+    }
+  } catch(e) {}
+}, 30000);
 </script>
 </body>
 </html>
