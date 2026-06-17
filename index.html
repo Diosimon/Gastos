@@ -2,385 +2,1045 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Mis Pagos">
-<title>Mis Pagos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VideoSplit — Comparador 60 FPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/whammy@1.0.0/whammy.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   :root {
-    --bg: #f5f4f0; --surface: #fff; --surface2: #f0ede8;
-    --border: rgba(0,0,0,0.10); --border-strong: rgba(0,0,0,0.16);
-    --text: #1a1a18; --text2: #6b6b67; --text3: #9e9e9a;
-    --accent: #2d6a4f; --accent-light: #e8f5ef;
-    --danger: #c0392b; --danger-light: #fdf0ee;
-    --warn: #b7791f; --warn-light: #fef9ec;
-    --r: 12px; --rl: 16px;
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #e8ff47;
+    --accent2: #ff4747;
+    --text: #f0f0f0;
+    --muted: #666;
+    --radius: 12px;
   }
-  body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; min-height: 100vh; }
 
-  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 16px 14px; position: sticky; top: 0; z-index: 50; }
-  .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-  .app-title { font-size: 20px; font-weight: 700; letter-spacing: -0.4px; }
-  .app-date { font-size: 13px; color: var(--text2); margin-top: 2px; }
-  .sync-row { font-size: 12px; color: var(--text2); margin-top: 3px; }
-  .btn-add { background: var(--accent); color: #fff; border: none; border-radius: var(--r); padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-  .metric { background: var(--surface2); border-radius: var(--r); padding: 10px 12px; }
-  .metric-label { font-size: 11px; color: var(--text2); }
-  .metric-value { font-size: 19px; font-weight: 700; letter-spacing: -0.5px; }
-  .metric-value.danger { color: var(--danger); }
-  .metric-value.success { color: var(--accent); }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    touch-action: manipulation;
+  }
 
-  .filters { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 14px; display: flex; gap: 7px; overflow-x: auto; }
-  .filters::-webkit-scrollbar { display: none; }
-  .chip { font-size: 13px; padding: 5px 14px; border-radius: 99px; border: 1px solid var(--border-strong); background: transparent; color: var(--text2); cursor: pointer; white-space: nowrap; }
-  .chip.active { background: var(--text); color: #fff; border-color: var(--text); }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
 
-  .content { padding: 14px 14px 100px; }
-  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin: 0 4px 10px; }
-  .section-label:not(:first-child) { margin-top: 18px; }
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
 
-  .debt-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); padding: 13px 14px; display: flex; align-items: center; gap: 11px; margin-bottom: 8px; transition: opacity 0.25s; }
-  .debt-card.paid { opacity: 0.45; }
-  .debt-card.overdue { border-color: var(--danger); border-left: 3px solid var(--danger); }
-  .debt-card.soon { border-color: var(--warn); border-left: 3px solid var(--warn); }
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    border-radius: 20px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
 
-  .check-btn { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; color: transparent; transition: all 0.15s; }
-  .check-btn:active { transform: scale(0.9); }
-  .debt-card.paid .check-btn { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  main {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
 
-  .type-icon { width: 36px; height: 36px; border-radius: var(--r); background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-  .debt-info { flex: 1; min-width: 0; }
-  .debt-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .debt-card.paid .debt-name { text-decoration: line-through; color: var(--text3); }
-  .debt-meta { font-size: 12px; color: var(--text2); margin-top: 3px; display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
-  .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
-  .badge-danger { background: var(--danger-light); color: var(--danger); }
-  .badge-warn { background: var(--warn-light); color: var(--warn); }
-  .badge-gray { background: var(--surface2); color: var(--text2); }
-  .debt-amount { font-size: 15px; font-weight: 700; flex-shrink: 0; letter-spacing: -0.3px; }
-  .debt-card.paid .debt-amount { color: var(--text3); }
-  .card-actions { display: flex; flex-direction: column; gap: 3px; }
-  .icon-btn { width: 28px; height: 28px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; color: var(--text3); }
-  .icon-btn:active { background: var(--surface2); }
+  .upload-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
 
-  .empty { text-align: center; padding: 2rem; color: var(--text3); font-size: 14px; }
+  .upload-zone {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 24px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
 
-  /* FAB */
-  .fab { position: fixed; bottom: 24px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; border: none; font-size: 28px; cursor: pointer; box-shadow: 0 4px 16px rgba(45,106,79,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: #151500;
+  }
 
-  /* MODAL */
-  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: flex-end; justify-content: center; }
-  .overlay.open { display: flex; }
-  .modal { background: var(--surface); border-radius: var(--rl) var(--rl) 0 0; padding: 20px 20px 36px; width: 100%; max-height: 90vh; overflow-y: auto; }
-  .modal-handle { width: 40px; height: 4px; background: var(--border-strong); border-radius: 99px; margin: 0 auto 18px; }
-  .modal h3 { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
-  .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 13px; color: var(--text2); font-weight: 600; margin-bottom: 6px; }
-  .field input, .field select { width: 100%; padding: 11px 13px; border: 1px solid var(--border-strong); border-radius: var(--r); font-size: 16px; background: var(--bg); color: var(--text); outline: none; }
-  .field input:focus, .field select:focus { border-color: var(--accent); }
-  .note { font-size: 12px; color: var(--text2); background: var(--surface2); border-radius: var(--r); padding: 9px 12px; margin-top: 6px; }
-  .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
-  .btn-cancel { flex: 1; padding: 12px; border: 1px solid var(--border-strong); border-radius: var(--r); background: transparent; font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer; }
-  .btn-save { flex: 2; padding: 12px; border: none; border-radius: var(--r); background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .upload-zone.loaded {
+    border-style: solid;
+    border-color: var(--accent);
+    padding: 0;
+  }
 
-  /* LOADING */
-  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem; gap: 12px; color: var(--text2); font-size: 14px; }
-  .spinner { width: 28px; height: 28px; border: 3px solid var(--border-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .upload-zone.loaded video {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    display: block;
+  }
+
+  .upload-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .upload-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .upload-sub {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .video-name {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    padding: 6px 8px;
+    background: rgba(232,255,71,0.08);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .config-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .config-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .config-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .config-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .btn-opt {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .btn-opt:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-opt.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .preview-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .preview-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .preview-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .preview-res {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    background: rgba(232,255,71,0.1);
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  #previewCanvas {
+    width: 100%;
+    display: block;
+    background: #000;
+    touch-action: none;
+  }
+
+  .playback-controls {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .seek-bar {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .seek-bar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .ctrl-btns {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn-ctrl {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .btn-ctrl:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-ctrl.play-btn {
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-size: 18px;
+  }
+
+  .time-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .label-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .label-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .label-input:focus { border-color: var(--accent); }
+  .label-input::placeholder { color: var(--muted); }
+
+  .export-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .btn-export {
+    width: 100%;
+    padding: 16px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--accent);
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    user-select: none;
+  }
+
+  .btn-export:hover { background: #d4e83a; transform: translateY(-1px); }
+  .btn-export:disabled {
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .progress-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .progress-wrap.active { display: flex; }
+
+  .progress-bar-outer {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-bar-inner {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  .progress-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    text-align: center;
+  }
+
+  .divider-config {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .divider-color-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .color-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .color-swatch.active { border-color: var(--accent); }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .range-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .alert {
+    background: rgba(255,71,71,0.1);
+    border: 1px solid rgba(255,71,71,0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--accent2);
+    display: none;
+  }
+  .alert.show { display: block; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 480px) {
+    .btn-opt { font-size: 11px; padding: 9px 6px; }
+    .upload-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-top">
-    <div>
-      <div class="app-title">💳 Mis Pagos</div>
-      <div class="app-date" id="date-label"></div>
-      <div class="sync-row" id="sync-status"></div>
-    </div>
-    <button class="btn-add" onclick="openModal()">+ Agregar</button>
-  </div>
-  <div class="summary">
-    <div class="metric"><div class="metric-label">Por pagar</div><div class="metric-value danger" id="total-pending">$0</div></div>
-    <div class="metric"><div class="metric-label">Pagado</div><div class="metric-value success" id="total-paid">$0</div></div>
-    <div class="metric"><div class="metric-label">Deudas</div><div class="metric-value" id="total-count">0</div></div>
-  </div>
-</div>
+<header>
+  <div class="logo">Video<span>Split</span></div>
+  <div class="badge">COMPARADOR v3.0 (60 FPS)</div>
+</header>
 
-<div class="filters">
-  <button class="chip active" onclick="setFilter('todas',this)">Todas</button>
-  <button class="chip" onclick="setFilter('pendiente',this)">Pendientes</button>
-  <button class="chip" onclick="setFilter('vence-pronto',this)">Vence pronto</button>
-  <button class="chip" onclick="setFilter('vencida',this)">Vencidas</button>
-  <button class="chip" onclick="setFilter('pagada',this)">Pagadas</button>
-</div>
-
-<div class="content" id="content">
-  <div class="loading"><div class="spinner"></div>Cargando pagos...</div>
-</div>
-
-<div class="overlay" id="overlay" onclick="closeIfBg(event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h3 id="modal-title">Nueva deuda / pago</h3>
-    <div class="field"><label>Nombre</label><input type="text" id="f-name" placeholder="ej. TDC Banamex, Netflix..." /></div>
-    <div class="field"><label>Monto (MXN)</label><input type="number" id="f-amount" placeholder="0.00" min="0" step="0.01" inputmode="decimal" /></div>
-    <div class="field"><label>Día de pago (del mes)</label><input type="number" id="f-day" placeholder="ej. 15" min="1" max="31" inputmode="numeric" /></div>
-    <div class="field"><label>Tipo</label>
-      <select id="f-type">
-        <option value="TDC">💳 Tarjeta de crédito</option>
-        <option value="Servicio">⚡ Servicio (luz, agua...)</option>
-        <option value="Suscripción">🔄 Suscripción</option>
-        <option value="Préstamo">💰 Préstamo / crédito</option>
-        <option value="Otro">📄 Otro</option>
-      </select>
+<main>
+  <div class="upload-grid">
+    <div class="upload-zone" id="zone1">
+      <input type="file" accept="video/*" id="file1" onchange="loadVideo(1, this)">
+      <span class="upload-icon">🎬</span>
+      <span class="upload-label">Video A</span>
+      <span class="upload-sub">tap para cargar</span>
     </div>
-    <div class="field"><label>Nota (opcional)</label>
-      <input type="text" id="f-nota" placeholder="ej. Samsung 65&quot;, MSI laptop..." />
-    </div>
-    <div style="display:flex; align-items:center; gap:10px; padding:11px 13px; background:var(--surface2); border-radius:var(--r); margin-top:4px;">
-      <input type="checkbox" id="f-unico" style="width:18px; height:18px; accent-color:var(--accent); cursor:pointer; flex-shrink:0;" />
-      <label for="f-unico" style="font-size:13px; color:var(--text2); cursor:pointer; line-height:1.4;">
-        <strong style="color:var(--text);">Pago único</strong> — se elimina al marcarlo como pagado
-      </label>
-    </div>
-    <div style="display:flex; align-items:center; gap:10px; padding:11px 13px; background:#fff8e6; border-radius:var(--r); margin-top:8px; border:1px solid #f0d080;">
-      <input type="checkbox" id="f-siguiente" style="width:18px; height:18px; accent-color:#b7791f; cursor:pointer; flex-shrink:0;" />
-      <label for="f-siguiente" style="font-size:13px; color:var(--text2); cursor:pointer; line-height:1.4;">
-        <strong style="color:var(--text);">Cobro en mes siguiente</strong> — ya pasó el corte, el pago cae el próximo mes
-      </label>
-    </div>
-    
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-save" onclick="saveDebt()">Guardar</button>
+    <div class="upload-zone" id="zone2">
+      <input type="file" accept="video/*" id="file2" onchange="loadVideo(2, this)">
+      <span class="upload-icon">🎬</span>
+      <span class="upload-label">Video B</span>
+      <span class="upload-sub">tap para cargar</span>
     </div>
   </div>
-</div>
 
-<script>
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbysTWCsJprHeWErXsOlsU951ldWGRsLI92FswaensVTjsdCLeoxHunE0fiBOL6nc4s/exec';
-
-let debts = [], payments = {}, currentFilter = 'todas', editingId = null;
-
-const today = new Date();
-const thisMonth = today.getMonth(), thisYear = today.getFullYear();
-const nextMonth = thisMonth === 11 ? 0 : thisMonth + 1;
-const nextYear = thisMonth === 11 ? thisYear + 1 : thisYear;
-const monthNames = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-const typeIcons = { TDC:'💳', Servicio:'⚡', Suscripción:'🔄', Préstamo:'💰', Otro:'📄' };
-
-document.getElementById('date-label').textContent = monthNames[thisMonth] + ' de ' + thisYear;
-
-function showStatus(msg, color) {
-  const el = document.getElementById('sync-status');
-  el.textContent = msg; el.style.color = color || '#6b6b67';
-  if (msg) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
-}
-
-async function load() {
-  showStatus('Cargando...', '#6b6b67');
-  try {
-    const res = await fetch(SHEETS_URL + '?t=' + Date.now());
-    const text = await res.text();
-    const data = text && text !== '{}' ? JSON.parse(text) : null;
-    if (data && data.debts && data.debts.length > 0) {
-      debts = data.debts; payments = data.payments || {};
-      showStatus('✓ Sincronizado', '#2d6a4f');
-    } else {
-      showStatus('Sin datos aún', '#6b6b67');
-    }
-  } catch(e) {
-    showStatus('⚠ Sin conexión', '#b7791f');
-  }
-  render();
-}
-
-async function save() {
-  const data = { debts, payments };
-  try {
-    showStatus('Guardando...', '#6b6b67');
-    await fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(data) });
-    showStatus('✓ Guardado', '#2d6a4f');
-  } catch(e) {
-    showStatus('⚠ Error al guardar', '#c0392b');
-  }
-}
-
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
-function payKey(id, y, m) { return id + '_' + y + '_' + m; }
-function isPaid(id, y, m) { return !!payments[payKey(id, y, m)]; }
-
-function togglePaid(id, y, m) {
-  const k = payKey(id, y, m);
-  if (payments[k]) {
-    delete payments[k];
-  } else {
-    payments[k] = true;
-    const debt = debts.find(d => d.id === id);
-    if (debt && debt.unico) {
-      setTimeout(() => {
-        if (confirm('"' + debt.name + '" es pago único. ¿Eliminarlo de la lista?')) {
-          debts = debts.filter(d => d.id !== id);
-          Object.keys(payments).forEach(pk => { if (pk.startsWith(id + '_')) delete payments[pk]; });
-          save(); render(); return;
-        }
-        save(); render();
-      }, 300);
-      return;
-    }
-  }
-  save(); render();
-}
-
-function getStatus(debt) {
-  if (debt.siguiente) return 'pendiente';
-  if (isPaid(debt.id, thisYear, thisMonth)) return 'pagada';
-  const target = new Date(thisYear, thisMonth, debt.day);
-  const diff = Math.ceil((target - today) / 86400000);
-  if (diff < 0) return 'vencida';
-  if (diff <= 5) return 'vence-pronto';
-  return 'pendiente';
-}
-
-function matches(d) { return currentFilter === 'todas' || getStatus(d) === currentFilter; }
-function setFilter(f, el) { currentFilter = f; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); render(); }
-function fmt(n) { return '$' + n.toLocaleString('es-MX', {minimumFractionDigits:0, maximumFractionDigits:0}); }
-
-function render() {
-  const thisDebts = debts.filter(d => !d.siguiente && matches(d)).sort((a,b) => a.day - b.day);
-  const showNext = currentFilter === 'todas' || currentFilter === 'pendiente';
-  const nextDebts = showNext ? debts.filter(d => !d.unico && (!isPaid(d.id, nextYear, nextMonth) || d.siguiente)).sort((a,b) => a.day - b.day) : [];
-
-  let html = '';
-  if (thisDebts.length) {
-    html += '<div class="section-label">Este mes</div>';
-    html += thisDebts.map(d => cardHTML(d, thisYear, thisMonth, false)).join('');
-  } else {
-    html += '<div class="section-label">Este mes</div><div class="empty">Sin resultados</div>';
-  }
-  if (showNext) {
-    html += '<div class="section-label">Próximo mes</div>';
-    html += nextDebts.length ? nextDebts.map(d => cardHTML(d, nextYear, nextMonth, true)).join('') : '<div class="empty">—</div>';
-  }
-
-  document.getElementById('content').innerHTML = html || '<div class="empty">Agrega tu primera deuda con el botón +</div>';
-
-  let pending = 0, paid = 0;
-  debts.forEach(d => { if (d.siguiente) return; if (isPaid(d.id, thisYear, thisMonth)) paid += d.amount; else pending += d.amount; });
-  document.getElementById('total-pending').textContent = fmt(pending);
-  document.getElementById('total-paid').textContent = fmt(paid);
-  document.getElementById('total-count').textContent = debts.length;
-}
-
-function cardHTML(debt, y, m, isNext) {
-  const paid = isPaid(debt.id, y, m);
-  const status = isNext ? 'pendiente' : getStatus(debt);
-  let badge = '';
-  if (!paid && !isNext) {
-    if (status === 'vencida') badge = '<span class="badge badge-danger">Vencida</span>';
-    else if (status === 'vence-pronto') {
-      const d = Math.max(0, Math.ceil((new Date(thisYear, thisMonth, debt.day) - today) / 86400000));
-      badge = `<span class="badge badge-warn">Vence en ${d} día${d===1?'':'s'}</span>`;
-    }
-  }
-  const cls = paid ? 'paid' : (status === 'vencida' ? 'overdue' : (status === 'vence-pronto' ? 'soon' : ''));
-  return `<div class="debt-card ${cls}">
-    <button class="check-btn" onclick="togglePaid('${debt.id}',${y},${m})">✓</button>
-    <div class="type-icon">${typeIcons[debt.type]||'📄'}</div>
-    <div class="debt-info">
-      <div class="debt-name">${debt.name}</div>
-      ${debt.nota ? `<div style="font-size:12px; color:var(--text3); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📝 ${debt.nota}</div>` : ""}
-      <div class="debt-meta">
-        <span>📅 Día ${debt.day}</span>
-        <span class="badge badge-gray">${debt.type}</span>
-        ${debt.unico ? '<span class="badge" style="background:#f0e6ff;color:#7c3aed;">Único</span>' : ''}
-        ${debt.siguiente ? '<span class="badge" style="background:#fff3cd;color:#b7791f;">Próximo mes</span>' : ''}
-        ${debt.siguiente ? '<span class="badge" style="background:#e0f0ff;color:#1d6fa4;">Próximo mes</span>' : ''}
-        ${badge}
+  <div class="config-card">
+    <div class="config-title">⚙ Configuración</div>
+    <div class="config-row">
+      <div class="config-group">
+        <label>Disposición</label>
+        <div class="btn-group">
+          <button class="btn-opt active" onclick="setLayout('side')" id="btn-side">◫ Lado a lado</button>
+          <button class="btn-opt" onclick="setLayout('top')" id="btn-top">▥ Arriba / Abajo</button>
+        </div>
+      </div>
+      <div class="config-group">
+        <label>Resolución de exportación</label>
+        <div class="btn-group">
+          <button class="btn-opt" onclick="setRes('720')" id="btn-720">720p</button>
+          <button class="btn-opt active" onclick="setRes('1080')" id="btn-1080">1080p</button>
+          <button class="btn-opt" onclick="setRes('1440')" id="btn-1440">1440p</button>
+        </div>
+      </div>
+      <div class="config-group">
+        <label>Etiquetas de video</label>
+        <div class="label-row">
+          <input class="label-input" id="labelA" placeholder="Video A" maxlength="20">
+          <input class="label-input" id="labelB" placeholder="Video B" maxlength="20">
+        </div>
+      </div>
+      <div class="config-group divider-config">
+        <label>Línea divisoria</label>
+        <div class="divider-color-row">
+          <div class="color-swatch active" style="background:#e8ff47" onclick="setDivColor('#e8ff47', this)"></div>
+          <div class="color-swatch" style="background:#ffffff" onclick="setDivColor('#ffffff', this)"></div>
+          <div class="color-swatch" style="background:#ff4747" onclick="setDivColor('#ff4747', this)"></div>
+          <div class="color-swatch" style="background:#00cfff" onclick="setDivColor('#00cfff', this)"></div>
+          <div class="color-swatch" style="background:#333" onclick="setDivColor('transparent', this)" title="Sin línea"></div>
+        </div>
+        <div class="range-label">
+          <span>Grosor</span>
+          <span id="divSizeLabel">3px</span>
+        </div>
+        <input type="range" min="0" max="10" value="3" id="divSize" oninput="updateDivSize(this.value)">
+      </div>
+      <div class="config-group">
+        <label>FPS de exportación</label>
+        <div class="btn-group">
+          <button class="btn-opt" onclick="setFPS(30)" id="btn-30">30 FPS</button>
+          <button class="btn-opt active" onclick="setFPS(60)" id="btn-60">60 FPS</button>
+        </div>
       </div>
     </div>
-    <div class="debt-amount">${fmt(debt.amount)}</div>
-    <div class="card-actions">
-      <button class="icon-btn" onclick="editDebt('${debt.id}')">✏️</button>
-      <button class="icon-btn" onclick="deleteDebt('${debt.id}')">🗑️</button>
+  </div>
+
+  <div class="preview-section">
+    <div class="preview-header">
+      <span class="preview-title">▶ Preview</span>
+      <span class="preview-res" id="resLabel">1080p</span>
     </div>
-  </div>`;
+    <canvas id="previewCanvas"></canvas>
+    <div class="playback-controls">
+      <input type="range" class="seek-bar" id="seekBar" min="0" max="100" value="0" step="0.1" oninput="seek(this.value)">
+      <div class="controls-row">
+        <div class="ctrl-btns">
+          <button class="btn-ctrl" onclick="skipTime(-5)" title="-5s">⏮</button>
+          <button class="btn-ctrl play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+          <button class="btn-ctrl" onclick="skipTime(5)" title="+5s">⏭</button>
+        </div>
+        <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+        <button class="btn-ctrl" onclick="resetVideos()" title="Reiniciar">↺</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="export-card">
+    <div class="config-title">⬇ Exportar video</div>
+    <div class="alert" id="alertMsg"></div>
+    <button class="btn-export" id="exportBtn" onclick="startExport()">
+      <span>🎞</span> Renderizar y descargar
+    </button>
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">Preparando...</div>
+    </div>
+  </div>
+</main>
+
+<video id="vid1" playsinline preload="auto" style="display:none"></video>
+<video id="vid2" playsinline preload="auto" style="display:none"></video>
+
+<script>
+// STATE
+let layout = 'side';
+let exportRes = '1080';
+let divColor = '#e8ff47';
+let divSize = 3;
+let playing = false;
+let animFrame = null;
+let video1Loaded = false;
+let video2Loaded = false;
+let exportFPS = 60; // FPS de exportación (30 o 60)
+
+const vid1 = document.getElementById('vid1');
+const vid2 = document.getElementById('vid2');
+const canvas = document.getElementById('previewCanvas');
+const ctx = canvas.getContext('2d');
+
+// RESOLUTION MAP
+const RES_MAP = {
+  '720':  { side: [1280, 360],  top: [640, 720]  },
+  '1080': { side: [1920, 540],  top: [960, 1080] },
+  '1440': { side: [2560, 720],  top: [1280, 1440]},
+};
+
+function getCanvasDims() {
+  const r = RES_MAP[exportRes][layout];
+  return { w: r[0], h: r[1] };
 }
 
-function openModal(id) {
-  editingId = id || null;
-  document.getElementById('modal-title').textContent = id ? 'Editar deuda' : 'Nueva deuda / pago';
-  if (id) {
-    const d = debts.find(x => x.id === id);
-    document.getElementById('f-name').value = d.name;
-    document.getElementById('f-amount').value = d.amount;
-    document.getElementById('f-day').value = d.day;
-    document.getElementById('f-type').value = d.type;
-    document.getElementById('f-nota').value = d.nota || '';
-    document.getElementById('f-unico').checked = !!d.unico;
-    document.getElementById('f-siguiente').checked = !!d.siguiente;
-    document.getElementById('f-siguiente').checked = !!d.siguiente;
-  } else {
-    ['f-name','f-amount','f-day'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('f-type').value = 'TDC';
-    document.getElementById('f-nota').value = '';
-    document.getElementById('f-unico').checked = false;
-    document.getElementById('f-siguiente').checked = false;
-    document.getElementById('f-siguiente').checked = false;
-  }
-  document.getElementById('overlay').classList.add('open');
+// LOAD VIDEO
+function loadVideo(n, input) {
+  if (!input.files[0]) return;
+  const file = input.files[0];
+  const url = URL.createObjectURL(file);
+  const vid = n === 1 ? vid1 : vid2;
+  const zone = document.getElementById('zone' + n);
+
+  vid.src = url;
+  vid.load();
+  vid.onloadedmetadata = () => {
+    if (n === 1) video1Loaded = true;
+    else video2Loaded = true;
+
+    zone.classList.add('loaded');
+    zone.innerHTML = `
+      <input type="file" accept="video/*" id="file${n}" onchange="loadVideo(${n}, this)">
+      <video src="${url}" muted playsinline style="width:100%;height:120px;object-fit:cover;border-radius:10px 10px 0 0;display:block"></video>
+      <div class="video-name">${file.name}</div>
+    `;
+
+    if (video1Loaded && video2Loaded) initPreview();
+  };
 }
 
-function closeModal() { document.getElementById('overlay').classList.remove('open'); }
-function closeIfBg(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
-
-function saveDebt() {
-  const name = document.getElementById('f-name').value.trim();
-  const amount = parseFloat(document.getElementById('f-amount').value);
-  const day = parseInt(document.getElementById('f-day').value);
-  const type = document.getElementById('f-type').value;
-  const nota = document.getElementById('f-nota').value.trim();
-  const unico = document.getElementById('f-unico').checked;
-  const siguiente = document.getElementById('f-siguiente').checked;
-  siguiente = document.getElementById('f-siguiente').checked;
-  if (!name || !amount || !day || day < 1 || day > 31) { alert('Por favor completa todos los campos.'); return; }
-  if (editingId) {
-    const i = debts.findIndex(x => x.id === editingId);
-    debts[i] = { ...debts[i], name, amount, day, type, nota, unico, siguiente };
-  } else {
-    debts.push({ id: uid(), name, amount, day, type, nota, unico, siguiente });
-  }
-  save(); closeModal(); render();
+// INIT PREVIEW
+function initPreview() {
+  updateCanvasSize();
+  drawFrame();
+  vid1.addEventListener('timeupdate', updateSeekBar);
 }
 
-function editDebt(id) { openModal(id); }
-function deleteDebt(id) {
-  if (!confirm('¿Eliminar esta deuda?')) return;
-  debts = debts.filter(d => d.id !== id);
-  Object.keys(payments).forEach(k => { if (k.startsWith(id + '_')) delete payments[k]; });
-  save(); render();
+function updateCanvasSize() {
+  const { w, h } = getCanvasDims();
+  canvas.width = w;
+  canvas.height = h;
+  canvas.style.maxHeight = '320px';
 }
 
-load();
+// DRAW
+function drawFrame() {
+  if (!video1Loaded || !video2Loaded) return;
+  const { w, h } = getCanvasDims();
+  ctx.clearRect(0, 0, w, h);
 
-// Auto-refresh cada 30 segundos para detectar cambios de la PC
-setInterval(async () => {
-  try {
-    const res = await fetch(SHEETS_URL + '?t=' + Date.now());
-    const text = await res.text();
-    const data = text && text !== '{}' ? JSON.parse(text) : null;
-    if (data && data.debts) {
-      debts = data.debts;
-      payments = data.payments || {};
-      render();
-      showStatus('✓ Actualizado', '#2d6a4f');
+  const lA = document.getElementById('labelA').value || 'Video A';
+  const lB = document.getElementById('labelB').value || 'Video B';
+
+  if (layout === 'side') {
+    drawVideoFit(vid1, 0, 0, w/2, h);
+    drawVideoFit(vid2, w/2, 0, w/2, h);
+    if (divColor !== 'transparent' && divSize > 0) {
+      ctx.fillStyle = divColor;
+      ctx.fillRect(w/2 - divSize/2, 0, divSize, h);
     }
-  } catch(e) {}
-}, 30000);
+    drawLabel(lA, 16, 16, 'left');
+    drawLabel(lB, w/2 + 16, 16, 'left');
+  } else {
+    drawVideoFit(vid1, 0, 0, w, h/2);
+    drawVideoFit(vid2, 0, h/2, w, h/2);
+    if (divColor !== 'transparent' && divSize > 0) {
+      ctx.fillStyle = divColor;
+      ctx.fillRect(0, h/2 - divSize/2, w, divSize);
+    }
+    drawLabel(lA, 16, 16, 'left');
+    drawLabel(lB, 16, h/2 + 16, 'left');
+  }
+
+  if (playing) animFrame = requestAnimationFrame(drawFrame);
+}
+
+function drawVideoFit(video, x, y, w, h) {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) {
+    ctx.fillStyle = '#111';
+    ctx.fillRect(x, y, w, h);
+    return;
+  }
+  const vAspect = vw / vh;
+  const cAspect = w / h;
+  let dx, dy, dw, dh;
+  if (vAspect > cAspect) {
+    dw = w; dh = w / vAspect;
+    dx = x; dy = y + (h - dh) / 2;
+  } else {
+    dh = h; dw = h * vAspect;
+    dy = y; dx = x + (w - dw) / 2;
+  }
+  ctx.fillStyle = '#000';
+  ctx.fillRect(x, y, w, h);
+  ctx.drawImage(video, dx, dy, dw, dh);
+}
+
+function drawLabel(text, x, y, align) {
+  const fontSize = Math.max(canvas.width * 0.015, 14);
+  ctx.font = `bold ${fontSize}px Syne, sans-serif`;
+  const metrics = ctx.measureText(text);
+  const pad = fontSize * 0.5;
+  const bw = metrics.width + pad * 2;
+  const bh = fontSize + pad;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  roundRect(ctx, x - pad/2, y - pad/2, bw, bh, 6);
+  ctx.fill();
+
+  ctx.fillStyle = '#e8ff47';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(text, x, y);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// PLAYBACK
+function togglePlay() {
+  if (!video1Loaded || !video2Loaded) {
+    showAlert('Carga los dos videos primero');
+    return;
+  }
+  playing = !playing;
+  document.getElementById('playBtn').textContent = playing ? '⏸' : '▶';
+  if (playing) {
+    vid1.play();
+    vid2.play();
+    animFrame = requestAnimationFrame(drawFrame);
+    vid1.addEventListener('ended', onEnded);
+  } else {
+    vid1.pause();
+    vid2.pause();
+    cancelAnimationFrame(animFrame);
+  }
+}
+
+function onEnded() {
+  playing = false;
+  document.getElementById('playBtn').textContent = '▶';
+  cancelAnimationFrame(animFrame);
+  drawFrame();
+}
+
+function seek(val) {
+  if (!video1Loaded) return;
+  const t1 = (val / 100) * vid1.duration;
+  const t2 = (val / 100) * vid2.duration;
+  vid1.currentTime = t1;
+  vid2.currentTime = t2;
+  if (!playing) setTimeout(drawFrame, 100);
+}
+
+function skipTime(s) {
+  vid1.currentTime = Math.max(0, vid1.currentTime + s);
+  vid2.currentTime = Math.max(0, vid2.currentTime + s);
+  if (!playing) setTimeout(drawFrame, 80);
+}
+
+function resetVideos() {
+  vid1.currentTime = 0;
+  vid2.currentTime = 0;
+  if (!playing) setTimeout(drawFrame, 80);
+}
+
+function updateSeekBar() {
+  if (!vid1.duration) return;
+  const pct = (vid1.currentTime / vid1.duration) * 100;
+  document.getElementById('seekBar').value = pct;
+  document.getElementById('timeDisplay').textContent =
+    `${fmt(vid1.currentTime)} / ${fmt(vid1.duration)}`;
+}
+
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+// CONFIG SETTERS
+function setLayout(l) {
+  layout = l;
+  document.getElementById('btn-side').classList.toggle('active', l === 'side');
+  document.getElementById('btn-top').classList.toggle('active', l === 'top');
+  updateCanvasSize();
+  if (!playing) drawFrame();
+}
+
+function setRes(r) {
+  exportRes = r;
+  ['720','1080','1440'].forEach(x => {
+    document.getElementById('btn-' + x).classList.toggle('active', x === r);
+  });
+  const labels = { '720':'720p','1080':'1080p','1440':'1440p' };
+  document.getElementById('resLabel').textContent = labels[r];
+  updateCanvasSize();
+  if (!playing) drawFrame();
+}
+
+function setDivColor(c, el) {
+  divColor = c;
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  if (!playing) drawFrame();
+}
+
+function updateDivSize(v) {
+  divSize = parseInt(v);
+  document.getElementById('divSizeLabel').textContent = v + 'px';
+  if (!playing) drawFrame();
+}
+
+function setFPS(fps) {
+  exportFPS = fps;
+  document.getElementById('btn-30').classList.toggle('active', fps === 30);
+  document.getElementById('btn-60').classList.toggle('active', fps === 60);
+}
+
+// EXPORT CON WHAMMY (60 FPS OPTIMIZADO PARA S8 GEN 4)
+async function startExport() {
+  if (!video1Loaded || !video2Loaded) {
+    showAlert('Carga los dos videos antes de exportar');
+    return;
+  }
+
+  const exportBtn = document.getElementById('exportBtn');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+
+  exportBtn.disabled = true;
+  progressWrap.classList.add('active');
+
+  const wasPlaying = playing;
+  if (playing) togglePlay();
+
+  const { w, h } = getCanvasDims();
+  const duration = Math.min(vid1.duration, vid2.duration);
+  const totalFrames = Math.floor(duration * exportFPS);
+  const frameInterval = 1000 / exportFPS;
+
+  // Canvas temporal para capturar frames
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = w;
+  tempCanvas.height = h;
+  const tempCtx = tempCanvas.getContext('2d');
+
+  // Configura Whammy
+  const recorder = new Whammy.Video(exportFPS);
+  let framesCaptured = 0;
+  let lastTime = performance.now();
+
+  // Reinicia videos
+  vid1.currentTime = 0;
+  vid2.currentTime = 0;
+  vid1.play();
+  vid2.play();
+
+  const startTime = performance.now();
+
+  function captureFrame() {
+    const now = performance.now();
+    const elapsed = (now - startTime) / 1000;
+
+    // Solo captura el frame si ha pasado el intervalo correcto
+    if (now - lastTime >= frameInterval) {
+      // Dibuja el frame actual en el canvas temporal
+      tempCtx.clearRect(0, 0, w, h);
+      const lA = document.getElementById('labelA').value || 'Video A';
+      const lB = document.getElementById('labelB').value || 'Video B';
+
+      if (layout === 'side') {
+        drawVideoFitToCanvas(vid1, tempCtx, 0, 0, w/2, h);
+        drawVideoFitToCanvas(vid2, tempCtx, w/2, 0, w/2, h);
+        if (divColor !== 'transparent' && divSize > 0) {
+          tempCtx.fillStyle = divColor;
+          tempCtx.fillRect(w/2 - divSize/2, 0, divSize, h);
+        }
+        drawLabelToCanvas(tempCtx, lA, 16, 16, 'left', w, h);
+        drawLabelToCanvas(tempCtx, lB, w/2 + 16, 16, 'left', w, h);
+      } else {
+        drawVideoFitToCanvas(vid1, tempCtx, 0, 0, w, h/2);
+        drawVideoFitToCanvas(vid2, tempCtx, 0, h/2, w, h/2);
+        if (divColor !== 'transparent' && divSize > 0) {
+          tempCtx.fillStyle = divColor;
+          tempCtx.fillRect(0, h/2 - divSize/2, w, divSize);
+        }
+        drawLabelToCanvas(tempCtx, lA, 16, 16, 'left', w, h);
+        drawLabelToCanvas(tempCtx, lB, 16, h/2 + 16, 'left', w, h);
+      }
+
+      // Añade el frame al recorder
+      recorder.add(tempCanvas);
+      framesCaptured++;
+      lastTime = now;
+    }
+
+    // Actualiza el progreso
+    const pct = Math.min((framesCaptured / totalFrames) * 100, 100);
+    progressBar.style.width = pct + '%';
+    progressText.textContent = `Capturando... ${framesCaptured}/${totalFrames} (${Math.round(pct)}%) - ${fmt(elapsed)}s`;
+
+    // Continúa o finaliza
+    if (framesCaptured < totalFrames && elapsed < duration) {
+      requestAnimationFrame(captureFrame);
+    } else {
+      vid1.pause();
+      vid2.pause();
+      
+      // Finaliza la grabación
+      progressText.textContent = 'Finalizando video...';
+      const videoBlob = recorder.compile();
+      const url = URL.createObjectURL(videoBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `videosplit_${exportRes}p_${exportFPS}fps_${Date.now()}.webm`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      exportBtn.disabled = false;
+      progressWrap.classList.remove('active');
+      progressBar.style.width = '0%';
+      progressText.textContent = 'Preparando...';
+      if (wasPlaying) togglePlay();
+    }
+  }
+
+  // Empieza la captura
+  requestAnimationFrame(captureFrame);
+}
+
+// Funciones auxiliares para el canvas temporal
+function drawVideoFitToCanvas(video, ctx, x, y, w, h) {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (!vw || !vh) {
+    ctx.fillStyle = '#111';
+    ctx.fillRect(x, y, w, h);
+    return;
+  }
+  const vAspect = vw / vh;
+  const cAspect = w / h;
+  let dx, dy, dw, dh;
+  if (vAspect > cAspect) {
+    dw = w; dh = w / vAspect;
+    dx = x; dy = y + (h - dh) / 2;
+  } else {
+    dh = h; dw = h * vAspect;
+    dy = y; dx = x + (w - dw) / 2;
+  }
+  ctx.fillStyle = '#000';
+  ctx.fillRect(x, y, w, h);
+  ctx.drawImage(video, dx, dy, dw, dh);
+}
+
+function drawLabelToCanvas(ctx, text, x, y, align, canvasWidth, canvasHeight) {
+  const fontSize = Math.max(canvasWidth * 0.015, 14);
+  ctx.font = `bold ${fontSize}px Syne, sans-serif`;
+  const metrics = ctx.measureText(text);
+  const pad = fontSize * 0.5;
+  const bw = metrics.width + pad * 2;
+  const bh = fontSize + pad;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  roundRect(ctx, x - pad/2, y - pad/2, bw, bh, 6);
+  ctx.fill();
+
+  ctx.fillStyle = '#e8ff47';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(text, x, y);
+}
+
+// ALERT
+function showAlert(msg) {
+  const el = document.getElementById('alertMsg');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// DRAG & DROP
+['zone1','zone2'].forEach((id, i) => {
+  const zone = document.getElementById(id);
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('video/')) {
+      const input = document.getElementById('file' + (i+1));
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      loadVideo(i+1, input);
+    }
+  });
+});
+
+// Redraw on label change
+document.getElementById('labelA').addEventListener('input', () => { if (!playing) drawFrame(); });
+document.getElementById('labelB').addEventListener('input', () => { if (!playing) drawFrame(); });
+
+// Initial canvas placeholder
+canvas.width = 960;
+canvas.height = 540;
+ctx.fillStyle = '#111';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+ctx.fillStyle = '#333';
+ctx.font = 'bold 18px Syne, sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('Carga dos videos para ver el preview', canvas.width/2, canvas.height/2);
 </script>
 </body>
 </html>
